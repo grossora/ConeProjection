@@ -7,11 +7,11 @@
 namespace larlite {
 
   bool ClusterShower::initialize() {
-       // fmcEnGood = new TH1D("fmcEnGood","Good Showers ",200,0,1000);
    return true;
   }
   
   bool ClusterShower::analyze(storage_manager* storage) {
+//Simple way to keep track for couts
 std::cout<<"+++++++++++START++++++++++++++"<<std::endl;
 Eventcounter++;
 std::cout<<"Event number "<<Eventcounter<<std::endl;
@@ -25,35 +25,10 @@ std::cout<<"Event number "<<Eventcounter<<std::endl;
 	double tick_offset = tservice->TriggerOffsetTPC() * tpc_clock.Frequency();// Kazu's fix
         unsigned int nplanes = larutil::Geometry::GetME()->Nplanes();
         // these things will be filled and used 
-	//== LarLight vector of hits
-		std::vector<larlite::hit> hitsvect;
-	//== 2D: This had the vertex point and end point in two 2d 
-		std::vector<std::pair<larutil::PxPoint,larutil::PxPoint>> AxisSEpt(nplanes);
-	//== 2D: This had the vertex point and end point in two 2d 
-		std::vector<std::vector<larutil::PxPoint>> ConePolygonProjection(nplanes);
-	//== Slope and Cept of the cone axis
-		std::vector<std::pair<double,double>> ConeAxisSlopeCept;
-        //== Make the pxhit  vector by plane for now...
-		std::vector<std::vector<larutil::PxHit>> PxHitsVect(nplanes);
-	//== RecoFit Based on weights 
-		std::vector<std::pair<double,double>> recofitvec(nplanes);
-	//== Truth Photon Start Position  
-		TLorentzVector StartConePos;
-		TLorentzVector StartShowerPos;
-	//== Truth Photon Start Dir  
-		TLorentzVector StartConeDir;
-		TLorentzVector StartShowerDir;
-        //== Make the pxhit  vector by plane for now... using hits
-		std::vector<std::vector<larutil::PxHit>> ContainedPxHitsVect(nplanes);
-        //== Make the pxhit  vector by plane for now...
-		std::vector<std::vector<unsigned int>> ContainedHitsVect(nplanes);
-        //== Detector energy...
-		double DetEn = -999;
-//=================================================
-//$$$$$$$$$$$$$$$$$---END---$$$$$$$$$$$$$$$$$$$$$$$
-//-----------Define some variables-----------------
 //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-//=================================================
+//$$$$$$$$$$$$$$$$$---END---$$$$$$$$$$$$$$$$$$$$$$$
+//$$$$$$$$$$Define some variables$$$$$$$$$$$$$$$$$$
+//$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 //=========================================
 //========== Bring in info  ===============
@@ -77,80 +52,111 @@ std::cout<<"Event number "<<Eventcounter<<std::endl;
 
 
 //------------------------------------------------------------
-//%%%%------ GET TRACKS AND LOOK AT DEDX OF START OF TRACK.
+//%%%%------ 1. GET TRACKS AND LOOK AT DEDX OF START OF TRACK that has a good DEDX value for a photon.
+//%%%%------ 2. Get the start point and guess direction. 
+//%%%%------ 3. See if the projection gets filled with hits
+//%%%%---------- If if does not then: 
+//%%%%------------------------------ A. it might be going the wrong way   
+//%%%%------------------------------ B. it might be a small shower   
+//%%%%------------------------------ C. it might have a bad direction    
+//%%%%------------------------------ C. it might be a track from proton,backscatter, ect...  
+//%%%%------ 4. If the projection gets filled with hits
+//%%%%------    Make the cone projection and see if there are any tracks inside of that projection 
+//%%%%------    Add tracks to usedtracklets
+//%%%%------   Store the tracklet and cone info somewhere 
+//%%%%------ 5. ReCluster hits inside the cone and pass along tracklet info as axis 
+	 
+
 TVector3 BestTrackletPos;
 TVector3 BestTrackletDir;
 std::vector<int> UsedTracklets;
-	//for(auto const& trk : * tracks){
+	// Make sure that we have atleast one tracklet
 	for(size_t track_index = 0; track_index < ev_track->size(); track_index++) {
 	//Check to see if the track is not already accounted for
 		bool usedtrk = false;
 		for(unsigned int check=0; check<UsedTracklets.size();check++) if(track_index == UsedTracklets[check]) usedtrk=true;
 		if(usedtrk) continue;
-	//%%%%%--- Get the start of the track 
-	std::cout<<"Trajectory Points "<< ev_track->at(track_index).NumberTrajectoryPoints()<<std::endl;
-	std::cout<<"Total Track Length "<< ev_track->at(track_index).Length()<<std::endl;
-	auto const& hit_index_v = track_hit_ass[track_index];
-	std::cout<<" Size of hit vector "<<hit_index_v.size()<<std::endl;
-	auto thehit = ev_hit->at( hit_index_v[0] ) ;
-       //auto dedxval = fCaloAlg.dEdx_AMP(h, 3.0);// What does pitch mean.... isn;t it just 3 cm
-	
-	//DEDX avg 
-	double dedxavg = 0;
-	for(unsigned int b=0; b<hit_index_v.size();b++){
-		auto thehit = ev_hit->at( hit_index_v[b] ) ;
-		unsigned int theplane = thehit.View();
-	       auto dedxval = fCaloAlg.dEdx_AMP(thehit.Integral(),(thehit.PeakTime()+ tick_offset)*geom->TimeToCm(), 3.0, theplane );// What does pitch mean.... isn;t it just 3 cm
-	       dedxavg += fCaloAlg.dEdx_AMP(thehit.Integral(),(thehit.PeakTime()+ tick_offset)*geom->TimeToCm(), 3.0, theplane );// What does pitch mean.... isn;t it just 3 cm
-//	std::cout<<"dEdx value :"<<dedxval<<std::endl;
-		}
-	dedxavg/=hit_index_v.size();
-	std::cout<<"dEdx avg value :"<<dedxavg<<std::endl;
 
-	//Log info for Best tracklet with dEdx
-		for(size_t pt=0; pt< ev_track->at(track_index).NumberTrajectoryPoints(); pt++){
-			 std::cout<<"\t Position at point ("<< pt << ")   : [" <<ev_track->at(track_index).LocationAtPoint(pt)[0]<<","<<ev_track->at(track_index).LocationAtPoint(pt)[1]<<" , " <<ev_track->at(track_index).LocationAtPoint(pt)[2]<<" ]"<<std::endl;
-			 std::cout<<"\t Direction at point ("<< pt << ")   : [" <<ev_track->at(track_index).DirectionAtPoint(pt)[0]<<","<<ev_track->at(track_index).DirectionAtPoint(pt)[1]<<" , " <<ev_track->at(track_index).DirectionAtPoint(pt)[2]<<" ]"<<std::endl;
-			/*
-			//Shitty hack;;;;;;;
-			 auto planes = larutil::Geometry::GetME()->Views();
-			 std::vector<larlite::geo::View_t> cplanes;
-			 std::copy(planes.begin(), planes.end(), std::back_inserter(cplanes));
-			std::cout<<" Size of planes "<< cplanes.size()<<std::endl;
-			 auto colplane = cplanes[2];
-			std::cout<<"Break point A"<<std::endl;
-			if(trk.NumberdQdx(colplane)!=0){
-			//Shitty hack^^^^^^^;
-			 std::cout<<"DQdx Plane 2 "<< trk.DQdxAtPoint(pt, colplane)<<std::endl;
-			}
-			*/
-			 //std::cout<<"DEdx "<< DQdxAtPoint<<std::endl;
-			}// Loop over all the points
+			std::cout<<"Trajectory Points "<< ev_track->at(track_index).NumberTrajectoryPoints()<<std::endl;
+			std::cout<<"Total Track Length "<< ev_track->at(track_index).Length()<<std::endl;
+	//%%%%%--- 1Get the DEDX 
+		// This should come from calo for now we will just try to calculate it here... 
+		auto const& hit_index_v = track_hit_ass[track_index];
+		std::cout<<" Size of hit vector "<<hit_index_v.size()<<std::endl;
+		double dedxAvgCol = 0;// For now we just use colection... we can change this later and grab from calo
+		double ColCounter = 0;
+		for(unsigned int b=0; b<hit_index_v.size();b++){
+			auto thehit = ev_hit->at( hit_index_v[b] ) ;
+			unsigned int theplane = thehit.View();
+			if(theplane==2){ ColCounter++;// I think 2 is the collection.... need to check this
+			dedxAvgCol += fCaloAlg.dEdx_AMP(thehit.Integral(),(thehit.PeakTime()+ tick_offset)*geom->TimeToCm(), 3.0, theplane );
+				}// if collection plane
+			// What does pitch mean.... isn;t it just 3 cm
+			}// for loop over associated hits
+		//DEDX avg 
+		dedxAvgCol/=ColCounter;
+		std::cout<<"dEdx avg value for Collection :"<<dedxAvgCol<<std::endl;
+		
+		// If DEDX is good then use this... else continue 
+
+	//%%%%%--- 2. Get the start of the track 
 		BestTrackletPos = ev_track->at(track_index).Vertex();
 		BestTrackletDir = ev_track->at(track_index).VertexDirection();
+
+		for(size_t pt=0; pt< ev_track->at(track_index).NumberTrajectoryPoints(); pt++){
+			 std::cout<<"\t Position at point ("<< pt << ")   : ["
+				 <<ev_track->at(track_index).LocationAtPoint(pt)[0]<<","
+				 <<ev_track->at(track_index).LocationAtPoint(pt)[1]<<" , "
+				 <<ev_track->at(track_index).LocationAtPoint(pt)[2]<<" ]"<<std::endl;
+			 std::cout<<"\t Direction at point ("<< pt << ")   : ["
+				 <<ev_track->at(track_index).DirectionAtPoint(pt)[0]<<","
+				 <<ev_track->at(track_index).DirectionAtPoint(pt)[1]<<" , "
+				 <<ev_track->at(track_index).DirectionAtPoint(pt)[2]<<" ]"<<std::endl;
+			}// Loop over all the points
+
 		}// for loop over tracks
 	
 	
 	
 
-//%%%%------ Take the Best Track track and then use the direction to contain the hits inside a cone.
-	std::cout<<"&&&&CONE STUFF&&& "<<coneintpc<<std::endl;
+//%%%%------ 3. See if the projection gets filled with hits
+	std::cout<<"&&&&CONE STUFF&&&&& "<<std::endl;
 	auto coneintpc = fgeoconic.ConeInTPC(BestTrackletPos,BestTrackletDir,ConeLength,angle, smoothness);
 	std::cout<<"Is the cone in the TPC? "<<coneintpc<<std::endl;
-	//if(coneintpc){
-	auto ConeEdge = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 2,smoothness);
-	std::cout<<std::endl;
-		for(int ep=0; ep<ConeEdge.size(); ep++)
-			std::cout<<ConeEdge[ep].w<<" "<<ConeEdge[ep].t+250.0<<std::endl;
-	std::cout<<std::endl;
-	//}
+	// Even if the conse is not in the TPC we still can force it to fit
+		// This can be cleaner but for now it's fine
+	auto ConeEdge0 = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 0,smoothness);
+	auto ConeEdge1 = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 1,smoothness);
+	auto ConeEdge2 = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 2,smoothness);
 	
-	//%%%% Check to see if it's profile is more shower like or track like... 
-		//&&&& base this on profile of hit spread or base it on profile shape
-	//%%%%------ Then we need to see about refining this axis.... if that is the case?  // do we even want to try this here? 
+	std::cout<<std::endl;
+		// This is useful if you just want to plot the polygone quickly
+		for(int ep=0; ep<ConeEdge2.size(); ep++)
+			std::cout<<ConeEdge2[ep].w<<" "<<ConeEdge2[ep].t+250.0<<std::endl;
+	std::cout<<std::endl;
+	// CHECK if this at all makes sense for a shower.
+		// FOR NOW to just fill the code out.... lets just take the direction from the track. 
+
+
 	
-//%%%%------ Take the leftover tracks and look for dEdx that are not contained in the previous cone.
-	//%%%%------ acounted charge/ tracks 
+//%%%%------ 4. If the projection gets filled with hits and is deemed good 
+		// Address the other tracklets that are in the volume
+	
+        for(size_t track_index = 0; track_index < ev_track->size(); track_index++) {
+                testPos = ev_track->at(track_index).Vertex();
+                std::vector<double> pos;
+                pos.push_back(testPos.X());
+                pos.push_back(testPos.Y());
+                pos.push_back(testPos.Z());
+		// just pic a plane to test
+                auto test2d = geom->Get2DPointProjectionCM(pos,2);
+		bool TrackInPoly = TrackStartContain(test2d, ConeEdge2);
+		if(trackInPoly) UsedTracklets.push_back(track_index);	
+		}
+
+//%%%%------ 5. ReCluster hits inside the cone and pass along tracklet info as axis 
+
+
 
 
 	
