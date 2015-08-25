@@ -51,7 +51,8 @@ namespace larlite {
 	bool TPCContained( const TLorentzVector& pos);
 
 	//$ Are the 3d Cone Edges Contained in the tpc?
-	bool ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int smoothness);
+	//bool ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int smoothness);
+	bool ConeInTPC(const TVector3& Pos, const TVector3& dir, double Length, double OpeningAngle, int smoothness);
 
 	//$ This returns Polygon edges for the cone If you already have the cone points
 	std::vector<larutil::PxPoint> ConicalEdge(std::vector<larutil::PxPoint> incone);

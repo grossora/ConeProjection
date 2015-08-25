@@ -26,7 +26,8 @@ bool geoconic::TPCContained(const TLorentzVector& pos  ){
 
 //-----------------------------------------------------------------------------------------------------------
 	// Are the 3d Cone Edges Contained in the tpc?
-bool geoconic::ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int smoothness){
+//bool geoconic::ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int smoothness){
+bool geoconic::ConeInTPC(const TVector3& Pos, const TVector3& dir, double Length, double OpeningAngle, int smoothness){
         // Calculate the radius at a given length and opening angle 
         double Radius = Length*tan(OpeningAngle/2 *PI/180);
         auto geo = larutil::Geometry::GetME();
@@ -43,7 +44,8 @@ bool geoconic::ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, d
 	double zlo = 0+fid;
 	double zhi = z-fid;
 	// Make the points 
-                TLorentzVector pos = Pos;
+                //TLorentzVector pos = Pos;
+                TVector3 pos = Pos;
                 TVector3 Axis;
                 double axisnorm = sqrt(dir.Px()*dir.Px()+dir.Py()*dir.Py()+dir.Pz()*dir.Pz());
                 Axis.SetX(dir.Px()/axisnorm);
