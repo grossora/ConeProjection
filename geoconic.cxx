@@ -543,6 +543,38 @@ std::vector<larutil::PxPoint> geoconic::ConicalEdge(std::vector<larutil::PxPoint
 			}//loop over conea
 	    return false; // Doesn't fall in any of the above cases
 	}
+//-----------------------------------------------------------------------------------------------------------
+	// This returns a bool if the track start point is inside the polygon
+       bool geoconic::TrackStartContain(larutil::PxHit hit, std::vector<larutil::PxPoint> polygon ){
+	double InfAdd = 10000000;
+	bool output;
+	// Need to make an extreme point for each hit 
+	larutil::PxPoint extreme;
+	extreme.w = hit.w+InfAdd;// are these in cm 
+	extreme.t = hit.t;// are these in cm 
+	larutil::PxPoint currenthit;
+	currenthit.t = hit.t ; // are these in cm 
+	currenthit.w = hit.w;// are these in cm 
+	// Count intersections of the above line with sides of polygon
+	int count = 0, i = 0;
+	int n = polygon.size();
+	    do
+		{
+		int next = (i+1)%n;
+			if (doIntersect(polygon[i], polygon[next], currenthit, extreme))
+			{
+				count++;
+			}
+		i = next;
+		} while (i != 0);
+	if(count%2!=0) output = true;
+return output = false;
+	}// end 
+
+
+
+
+
 		
 
 
