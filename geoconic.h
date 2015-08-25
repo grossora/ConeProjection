@@ -49,6 +49,8 @@ namespace larlite {
 
 	//$ Is a 3D point Contained in TPC
 	bool TPCContained( const TLorentzVector& pos);
+	bool TPCContained( std::vector<double> pos, double fid);
+	std::vector<double> ForceTPCContained( std::vector<double> pos, double fid);
 
 	//$ Are the 3d Cone Edges Contained in the tpc?
 	//bool ConeInTPC(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int smoothness);
@@ -64,7 +66,8 @@ namespace larlite {
                 // 4 Opening Angle 
                 // 5 Plane
                 // 6 smoothness 
-        std::vector<larutil::PxPoint> ConicalFeatures(const TLorentzVector& Pos, const TLorentzVector& dir, double Length, double OpeningAngle, int plane , int smoothness);
+        std::vector<larutil::PxPoint> ConicalFeatures(const TVector3& Pos, const TVector3& dir, double Length, double OpeningAngle, int plane , int smoothness);
+        std::vector<larutil::PxPoint> FitConicalFeatures(const TVector3& Pos, const TVector3& dir, double Length, double OpeningAngle, int plane , int smoothness);
 
         bool ConicalOverlap(const std::vector<larutil::PxPoint> conea,const std::vector<larutil::PxPoint> coneb);
 	//$ This returns the hits contained in the polygon

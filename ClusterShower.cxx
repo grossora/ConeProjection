@@ -13,6 +13,8 @@ namespace larlite {
   
   bool ClusterShower::analyze(storage_manager* storage) {
 std::cout<<"+++++++++++START++++++++++++++"<<std::endl;
+Eventcounter++;
+std::cout<<"Event number "<<Eventcounter<<std::endl;
 //=================================================
 //Define some things 
 	// Need to clean this up
@@ -93,12 +95,17 @@ std::vector<int> UsedTracklets;
 	auto thehit = ev_hit->at( hit_index_v[0] ) ;
        //auto dedxval = fCaloAlg.dEdx_AMP(h, 3.0);// What does pitch mean.... isn;t it just 3 cm
 	
+	//DEDX avg 
+	double dedxavg = 0;
 	for(unsigned int b=0; b<hit_index_v.size();b++){
 		auto thehit = ev_hit->at( hit_index_v[b] ) ;
 		unsigned int theplane = thehit.View();
 	       auto dedxval = fCaloAlg.dEdx_AMP(thehit.Integral(),(thehit.PeakTime()+ tick_offset)*geom->TimeToCm(), 3.0, theplane );// What does pitch mean.... isn;t it just 3 cm
-	std::cout<<"dEdx value :"<<dedxval<<std::endl;
+	       dedxavg += fCaloAlg.dEdx_AMP(thehit.Integral(),(thehit.PeakTime()+ tick_offset)*geom->TimeToCm(), 3.0, theplane );// What does pitch mean.... isn;t it just 3 cm
+//	std::cout<<"dEdx value :"<<dedxval<<std::endl;
 		}
+	dedxavg/=hit_index_v.size();
+	std::cout<<"dEdx avg value :"<<dedxavg<<std::endl;
 
 	//Log info for Best tracklet with dEdx
 		for(size_t pt=0; pt< ev_track->at(track_index).NumberTrajectoryPoints(); pt++){
@@ -127,8 +134,16 @@ std::vector<int> UsedTracklets;
 	
 
 //%%%%------ Take the Best Track track and then use the direction to contain the hits inside a cone.
+	std::cout<<"&&&&CONE STUFF&&& "<<coneintpc<<std::endl;
 	auto coneintpc = fgeoconic.ConeInTPC(BestTrackletPos,BestTrackletDir,ConeLength,angle, smoothness);
 	std::cout<<"Is the cone in the TPC? "<<coneintpc<<std::endl;
+	//if(coneintpc){
+	auto ConeEdge = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 2,smoothness);
+	std::cout<<std::endl;
+		for(int ep=0; ep<ConeEdge.size(); ep++)
+			std::cout<<ConeEdge[ep].w<<" "<<ConeEdge[ep].t+250.0<<std::endl;
+	std::cout<<std::endl;
+	//}
 	
 	//%%%% Check to see if it's profile is more shower like or track like... 
 		//&&&& base this on profile of hit spread or base it on profile shape
