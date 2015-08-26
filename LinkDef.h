@@ -10,5 +10,7 @@
 #pragma link off all functions;
 
 //#pragma link C++ class sample+;
+//#pragma link C++ class larlite::GammaContainment+;
+#pragma link C++ class larlite::ClusterShower+;
 //ADD_NEW_CLASS ... do not change this line
 #endif

@@ -50,7 +50,8 @@ std::cout<<"Event number "<<Eventcounter<<std::endl;
 	//if(!ev_calo) std::cout<<"No calo association found..."<<std::endl;
 	//
 
-	auto all_ev_hits = storage->get_data<event_hit>("cccluster");
+	//auto all_ev_hits = storage->get_data<event_hit>("cccluster");
+	auto all_ev_hits = storage->get_data<event_hit>("gaushit");
 	if(!all_ev_hits){ print(msg::kERROR,__FUNCTION__,"No cclusterhit data product"), throw std::exception();}
 	if(all_ev_hits->empty()){ std::cout<<"No all cchits in this event"<<std::endl; return false;}
 
@@ -133,7 +134,7 @@ std::vector<int> UsedTracklets;
 	auto ConeEdge2 = fgeoconic.FitConicalFeatures(BestTrackletPos,BestTrackletDir,ConeLength,angle, 2,smoothness);
 	
 	std::cout<<std::endl;
-		// This is useful if you just want to plot the polygone quickly
+		// This is useful if you just want to plot the polygon quickly
 		for(int ep=0; ep<ConeEdge2.size(); ep++)
 			std::cout<<ConeEdge2[ep].w<<" "<<ConeEdge2[ep].t+250.0<<std::endl;
 	std::cout<<std::endl;
@@ -152,7 +153,6 @@ std::vector<int> UsedTracklets;
                 pos.push_back(testPos.Y());
                 pos.push_back(testPos.Z());
 		// just pic a plane to test
-                //larutil::PxHit test2d = geom->Get2DPointProjectionCM(pos,2);
 		auto test2d = geom->Get2DPointProjectionCM(pos,2);
 		bool TrackInPoly = fgeoconic.TrackStartContain(test2d, ConeEdge2);
 		if(TrackInPoly) UsedTracklets.push_back(track_index);	
@@ -160,13 +160,39 @@ std::vector<int> UsedTracklets;
 
 //%%%%------ 5. ReCluster hits inside the cone and pass along tracklet info as axis 
 
+	// This can be done in the beginning. 
+        //== Make the pxhit  vector by plane for now...
+                std::vector<std::vector<larutil::PxHit>> PxHitsVect(nplanes);
 
+		// Sort out the hits
+		for(auto const& hit : *all_ev_hits){ 
+                              ::larutil::PxHit h;
+                              h.t = (hit.PeakTime() + tick_offset )* geom->TimeToCm() ;
+                              h.w = hit.WireID().Wire     * geom->WireToCm();
+                              h.charge = hit.Integral();
+                              h.plane  = hit.View();
+                                if( (int)hit.View() ==0) PxHitsVect[0].push_back(h);
+                                if( (int)hit.View() ==1) PxHitsVect[1].push_back(h);
+                                if( (int)hit.View() ==2) PxHitsVect[2].push_back(h);
+                                  }
 
-
+		std::vector<larutil::PxHit> contp0 = fgeoconic.PolyContain(PxHitsVect[0], ConeEdge0);
+		std::vector<larutil::PxHit> contp1 = fgeoconic.PolyContain(PxHitsVect[1], ConeEdge1);
+		std::vector<larutil::PxHit> contp2 = fgeoconic.PolyContain(PxHitsVect[2], ConeEdge2);
 	
+	// Needs to be a way to remove the hits from the PxHitsVect once they have been used in a cluster. 
+	// Or we can assign then to each cone and make a choice later on before making the clusters.
+	std::cout<<"&&&&HIT CLUSTER STUFF&&&&& "<<std::endl;
+	// Lets see what this looks like 
+	for( unsigned int a =0 ; a<contp2.size(); a++){
+		std::cout<<contp2[a].w<<" "<<contp2[a].t+250.0<<std::endl;
+		}
 //------------------------------------------------------------
 
 
+
+   // First of all create an output
+//    auto Output_cluster = storage->get_data<event_cluster>("ClusterShower");
 
 
 
