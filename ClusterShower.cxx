@@ -50,6 +50,9 @@ std::cout<<"Event number "<<Eventcounter<<std::endl;
 	//if(!ev_calo) std::cout<<"No calo association found..."<<std::endl;
 	//
 
+	auto all_ev_hits = storage->get_data<event_hit>("cccluster");
+	if(!all_ev_hits){ print(msg::kERROR,__FUNCTION__,"No cclusterhit data product"), throw std::exception();}
+	if(all_ev_hits->empty()){ std::cout<<"No all cchits in this event"<<std::endl; return false;}
 
 //------------------------------------------------------------
 //%%%%------ 1. GET TRACKS AND LOOK AT DEDX OF START OF TRACK that has a good DEDX value for a photon.
@@ -143,15 +146,16 @@ std::vector<int> UsedTracklets;
 		// Address the other tracklets that are in the volume
 	
         for(size_t track_index = 0; track_index < ev_track->size(); track_index++) {
-                testPos = ev_track->at(track_index).Vertex();
+                auto testPos = ev_track->at(track_index).Vertex();
                 std::vector<double> pos;
                 pos.push_back(testPos.X());
                 pos.push_back(testPos.Y());
                 pos.push_back(testPos.Z());
 		// just pic a plane to test
-                auto test2d = geom->Get2DPointProjectionCM(pos,2);
-		bool TrackInPoly = TrackStartContain(test2d, ConeEdge2);
-		if(trackInPoly) UsedTracklets.push_back(track_index);	
+                //larutil::PxHit test2d = geom->Get2DPointProjectionCM(pos,2);
+		auto test2d = geom->Get2DPointProjectionCM(pos,2);
+		bool TrackInPoly = fgeoconic.TrackStartContain(test2d, ConeEdge2);
+		if(TrackInPoly) UsedTracklets.push_back(track_index);	
 		}
 
 //%%%%------ 5. ReCluster hits inside the cone and pass along tracklet info as axis 

@@ -77,7 +77,8 @@ namespace larlite {
 	//std::vector<larlite::hit> PolyContainHit(std::vector<larlite::hit> hits, std::vector<larutil::PxPoint> polygon );
 
 	//$ This returns a bool if the start of a track is inside of the polygon
-       bool TrackStartContain(larutil::PxHit hit, std::vector<larutil::PxPoint> polygon );
+       //bool TrackStartContain(larutil::PxHit hit, std::vector<larutil::PxPoint> polygon );
+       bool TrackStartContain(larutil::PxPoint hit, std::vector<larutil::PxPoint> polygon );
 
 
 	//$ This returns the larlite::hits contained in the polygon

@@ -545,7 +545,8 @@ std::vector<larutil::PxPoint> geoconic::ConicalEdge(std::vector<larutil::PxPoint
 	}
 //-----------------------------------------------------------------------------------------------------------
 	// This returns a bool if the track start point is inside the polygon
-       bool geoconic::TrackStartContain(larutil::PxHit hit, std::vector<larutil::PxPoint> polygon ){
+       //bool geoconic::TrackStartContain(larutil::PxHit hit, std::vector<larutil::PxPoint> polygon ){
+       bool geoconic::TrackStartContain(larutil::PxPoint hit, std::vector<larutil::PxPoint> polygon ){
 	double InfAdd = 10000000;
 	bool output;
 	// Need to make an extreme point for each hit 
